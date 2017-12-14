@@ -1,0 +1,15 @@
+# archivo de ignorados para GIT
+# Common Lisp
+# extensiones de archivos que seran ignorados
+*.log
+*.fas
+*.fasl
+*.lib
+*.lisp~
+*.asd~
+*.*#           
+#la ultima linea es para ignorar archivos de emacs 
+*.*~ 
+
+
+
