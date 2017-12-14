@@ -36,17 +36,15 @@
 
 ;; example 2. route that outputs Json.
 ;; FYI: "jojo" is synonymous for the Jonathan package
-(defun json-test (params)
+(with-route ("/jsontest" params) 
   (declare (ignore params))
   (string-response
    (jojo:to-json '(:|name| "Common Lisp" :born 1984 :impls (SBCL CLISP)))))
 
-(set-route "/jsontest" #'json-test)
-
 ;; try: http://localhost:5000/jsontest
 
 ;; example 3. HTML output example with spinneret
-(defun html-hello (params)
+(with-route ("/html-hello" params)
   (declare (ignore params))
   (html-response  ;this just sets the content-type accordingly
    (with-output-to-string (*html*)
@@ -57,8 +55,6 @@
          (:title "title"))
         (:body (:h1 "Hello Common Lisp!")
                (:img :src "static/logo-compact.png")))))))
-
-(set-route "/html-hello" #'html-hello :method :GET)
 
 ;; try: http://localhost:5000/html-hello
 
