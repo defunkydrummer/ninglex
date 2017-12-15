@@ -24,8 +24,7 @@
 (defvar *app* (make-instance 'ningle:<app>)
   "Object representing your Ningle/Ninglex application.")
 
-;(declaim (optimize debug))
-
+;; Left there so you can use them someday...
 (defparameter *http-status-codes*
   '(:ok 200
     :not-found 404
@@ -104,7 +103,7 @@ Param-list should be list of (symbol param-name-as-string).
 (defvar *handler* nil
   "Handler for starting/stopping the server")
 
-;; Start server
+;; Quick and dirty function to start server
 (defun start ( &key (server :hunchentoot)
                     (port 5000)
                     (debug t)

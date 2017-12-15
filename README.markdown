@@ -15,7 +15,7 @@ Ningle was too minimal, so Ninglex adds just a few functions and macros on top o
 
 Ninglex is only about defining your routes and your route handlers. Starting and stopping the server. The rest is left to your control.
 
-Underlying Ninglex is Eitaro Fukamachi's Clack & Lack, which allows different servers, so your app can be hosted usingHunchentoot Wookie, etc. What this means is that there's something that you want to do with Ninglex and you don't know how to do, you can do it by glancing at Clack and Lack's documentation. 
+Underlying Ninglex is Eitaro Fukamachi's Clack & Lack, which allows different servers, so your app can be hosted using Hunchentoot Wookie, etc. What this means is that there's something that you want to do with Ninglex and you don't know how to do, you can do it by glancing at Clack and Lack's documentation. 
 
 ## Usage
 
@@ -70,7 +70,7 @@ Want to output JSON? make sure you load the Jonathan library (*Newbies: do (ql:q
 ;; FYI: "jojo" is synonymous for the Jonathan package
 (with-route ("/jsontest" params) 
   (declare (ignore params))
-  (string-response
+  (json-response ;like string-response but sets correct http content-type
    (jojo:to-json '(:|name| "Common Lisp" :born 1984 :impls (SBCL CLISP)))))
 ```
 Try: http://localhost:5000/jsontest
