@@ -18,6 +18,7 @@
    :with-route
    :string-response
    :html-response
+   :json-response
    :get-param-value
    :start
    :stop)
@@ -82,10 +83,15 @@ Param-list should be list of (symbol param-name-as-string).
     (,text-string)))  
 
 ;; HTML response
-(defun html-response (html-string)
+(defmacro html-response (html-string &rest args)
   "Creates standard HTML response from string, for use in route handlers."
-  (string-response html-string :content-type "text/html"))
+  `(string-response ,html-string :content-type "text/html" ,@args))
                   
+;; JSON response
+(defmacro json-response (html-string &rest args)
+  "Standard response for JSON"
+  `(string-response ,html-string :content-type "application/json" ,@args))
+                   
 
 (defun set-route
     (route function &key (method :GET))

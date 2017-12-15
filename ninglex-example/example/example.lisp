@@ -1,6 +1,6 @@
 (in-package :cl-user)
 (defpackage ninglex.example
-  (:use :cl :ninglex :ninglex.util)
+  (:use :cl :ninglex #| :ninglex.util |#)
   (:import-from :lack.builder
    :builder)
   (:import-from :spinneret
@@ -38,7 +38,7 @@
 ;; FYI: "jojo" is synonymous for the Jonathan package
 (with-route ("/jsontest" params) 
   (declare (ignore params))
-  (string-response
+  (json-response ;like string-response but sets correct http content-type
    (jojo:to-json '(:|name| "Common Lisp" :born 1984 :impls (SBCL CLISP)))))
 
 ;; try: http://localhost:5000/jsontest
