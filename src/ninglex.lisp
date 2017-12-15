@@ -3,12 +3,6 @@
   (:use :cl)
   (:import-from :lack.builder
                 :builder)
-;;  (:import-from :lack.request
-;;                 :request-query-parameters)
-;;  (:import-from :ningle
-;;                :*request*)
-                                        ;(:import-from :alexandria
-                                        ; :alist-hash-table)
   (:export
    :*app*
    :*http-status-codes*
@@ -20,8 +14,7 @@
    :html-response
    :get-param-value
    :start
-   :stop)
-  )
+   :stop))
 
 (in-package :ninglex)
 
@@ -138,15 +131,6 @@ Param-list should be list of (symbol param-name-as-string).
            :use-thread use-thread
            ))))
 
-;; esto da error al cargar...
-;; error con session/authentication
-;; (defun start ()
-;;   (defparameter *handler*
-;;     (clack:clackup 
-;;      (clack.builder:builder
-;;       clack.middleware.session:<clack-middleware-session>
-;;       *app*))))
-
 ;; Stop server
 (defun stop ()
   "Stop the server"
@@ -155,7 +139,4 @@ Param-list should be list of (symbol param-name-as-string).
     (clack:stop *handler*)
     (setf *handler* nil) ;Clear the handler (TODO: is this ok? )
     ))
-
-;; (push #P"c:/Users/fegoavil010/Documents/instalados/lisp-portacle/portacle/all/quicklisp/local-projects/cffi-libs/" cffi:*foreign-library-directories*)
-
 
