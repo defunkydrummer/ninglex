@@ -32,7 +32,8 @@
   "Useful HTTP status codes")
 
 (defun get-param-value (param-list name)
-  (declare (type string name) (type list param-list))
+  (declare (type (or symbol string) name)
+           (type list param-list))
   "Obtain the value of a request parameter called 'name' (string)"
   (let ((cons-cell (assoc name param-list :test 'equal)))
      (if cons-cell
