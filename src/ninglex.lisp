@@ -107,6 +107,7 @@ Param-list should be list of (symbol param-name-as-string).
 ;; Quick and dirty function to start server
 (defun start ( &key (server :hunchentoot)
                     (port 5000)
+                    (address "127.0.0.1")
                     (debug t)
                     (silent nil)
                     (use-thread t)
@@ -131,6 +132,7 @@ Param-list should be list of (symbol param-name-as-string).
             *app*)
            ;; Clackup options
            :server server
+           :address address
            :port port
            :debug debug
            :silent silent
