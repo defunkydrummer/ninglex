@@ -64,6 +64,21 @@ We can do the same, but in less lines, without having to do a "defun".
 
 ```
 
+Want to capture parametrized URLs? This example is useful:
+*(here we are using spinneret to output html)*
+
+```common-lisp
+(with-route ("/person/:name" params)
+  (with-request-params params ((n :name))
+    (ninglex:html-response
+     (with-output-to-string (*html*)
+       (with-html
+         (:p :class "title is-1" n)
+
+;; etc
+```
+
+
 Want to output JSON? make sure you load the Jonathan library (*Newbies: do (ql:quickload "jonathan")*) 
 
 ```common-lisp
