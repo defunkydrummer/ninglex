@@ -2,7 +2,7 @@
 (defpackage ninglex
   (:use :cl)
   (:import-from :lack.builder
-                :builder)
+		:builder)
   (:export
    :*app*
    :*http-status-codes*
@@ -15,8 +15,12 @@
    :json-response
    :get-param-value
    :start
-   :stop))
-
+   :stop
+   ;; interface for using ninglex without using the global app/handler
+   :start-app
+   :stop-handler
+   :add-route
+   :with-app-route))
 (in-package :ninglex)
 
 ;; ninglex:*app*
@@ -27,19 +31,20 @@
 ;; Left there so you can use them someday...
 (defparameter *http-status-codes*
   '(:ok 200
+    :bad-request 400
     :not-found 404
     :server-error 500)
   "Useful HTTP status codes")
 
 (defun get-param-value (param-list name)
   (declare (type (or symbol string) name)
-           (type list param-list))
+	   (type list param-list))
   "Obtain the value of a request parameter called 'name' (string)"
   (let ((cons-cell (assoc name param-list :test 'equal)))
      (if cons-cell
-         (cdr cons-cell)
-         ;; else
-         (error (format nil "Request parameter not found: ~a" name)))))
+	 (cdr cons-cell)
+	 ;; else
+	 (error (format nil "Request parameter not found: ~a" name)))))
 
 (defmacro with-request-params (params-variable param-list &body body)
   (declare (type list param-list) (type symbol params-variable))
@@ -51,54 +56,97 @@ Param-list should be list of (symbol param-name-as-string).
 "
   `(symbol-macrolet
        ,(mapcar (lambda (entry)
-                  (let ((var-name 
-                          (first entry)) ; name of var to create (symbol)
-                        (param-name   ; name of param (string)
-                          (second entry)))
-                    (list var-name ; define symbol
-                          ;; which will expand to:
-                          `(get-param-value ,params-variable ,param-name)
-                          )))
-         param-list)
+		  (let ((var-name
+			  (first entry)) ; name of var to create (symbol)
+			(param-name   ; name of param (string)
+			  (second entry)))
+		    (list var-name ; define symbol
+			  ;; which will expand to:
+			  `(get-param-value ,params-variable ,param-name)
+			  )))
+	 param-list)
      ,@body))
 
 ;; Important Note: Clack expects that the return value from
 ;; the route function is:
 ;; (STATUS-CODE list body)
 ;; where body must be a vector of character, OR otherwise
-;; it can be a list of strings. 
+;; it can be a list of strings.
 (defun string-response (text-string &key
-                                      (status-code 200)
-                                      (content-type "text/plain"))
+				      (status-code 200)
+				      (content-type "text/plain"))
   "Creates standard text (string) response for use in route handlers."
   `(,status-code
     (:content-type ,content-type)
-    (,text-string)))  
+    (,text-string)))
 
 ;; HTML response
 (defmacro html-response (html-string &rest args)
   "Creates standard HTML response from string, for use in route handlers."
   `(string-response ,html-string :content-type "text/html" ,@args))
-                  
+
 ;; JSON response
 (defmacro json-response (html-string &rest args)
   "Standard response for JSON"
   `(string-response ,html-string :content-type "application/json" ,@args))
-                   
 
-(defun set-route
-    (route function &key (method :GET))
-  "Assign function to route"
-  (setf (ningle:route *app* route :method method)
-        function))
+(defun add-route (app route function &key (method :GET))
+  "registers a route in the specified app"
+  (setf (ningle:route app route :method method) function))
+
+(defun set-route (route function &key (method :GET))
+  (add-route *app* route function :method method))
 
 (defmacro with-route ((route-string params-var &key (method :GET)) &body body)
   "When calling the route, execute the body, binding the params to params-var"
   `(set-route ,route-string
-               (lambda (,params-var)
-                 ,@body)
-               :method ,method))
-  
+	       (lambda (,params-var)
+		 ,@body)
+	       :method ,method))
+
+(defmacro with-app-route ((app route-string params-var &key (method :GET)) &body body)
+  "When calling the route in the specified app, execute the body
+binding the params to the params-var"
+  `(add-route ,app ,route-string
+	       (lambda (,params-var)
+		 ,@body)
+	       :method ,method))
+
+(defun start-app (app &key (server :hunchentoot)
+			   (port 5000)
+			   (address "127.0.0.1")
+			   (debug t)
+			   (silent nil)
+			   (use-thread t)
+			   ;; note: needs trailing / to correctly capture file URLs
+			   (static-path "/static/")
+			   ;; note: needs trailing / to work, as well
+			   (static-root #P"/static/"))
+
+  (let ((handler nil))
+    (setf handler (clack:clackup
+		   ;; use lack builder to enable middlewares
+		   (lack.builder:builder
+		    ;; session lack middleware
+		    :session
+		    ;; "static" lack middleware
+		    (:static :path static-path
+			     :root static-root)
+		    *app*)
+		   ;; Clackup options
+		   :server server
+		   :address address
+		   :port port
+		   :debug debug
+		   :silent silent
+		   :use-thread use-thread))
+    handler))
+
+(defun stop-handler (handler)
+  (when handler
+    (format t "Ninglex: Stopping server... ~%")
+    (clack:stop handler)
+    (setf handler nil)))
 
 ;; Handler for start/stop.
 (defvar *handler* nil
@@ -106,45 +154,32 @@ Param-list should be list of (symbol param-name-as-string).
 
 ;; Quick and dirty function to start server
 (defun start ( &key (server :hunchentoot)
-                    (port 5000)
-                    (address "127.0.0.1")
-                    (debug t)
-                    (silent nil)
-                    (use-thread t)
-                    ;; note: needs trailing / to correctly capture file URLs
-                    (static-path "/static/")
-                    ;; note: needs trailing / to work, as well
-                    (static-root #P"/static/"))
+		    (port 5000)
+		    (address "127.0.0.1")
+		    (debug t)
+		    (silent nil)
+		    (use-thread t)
+		    ;; note: needs trailing / to correctly capture file URLs
+		    (static-path "/static/")
+		    ;; note: needs trailing / to work, as well
+		    (static-root #P"/static/"))
   "Start the server."
   (when *handler*
     "Server already started!")
   (unless *handler*
     (format t  "Ninglex: Starting server in port ~d... ~%" port)
     (setf *handler*
-          (clack:clackup
-           ;; use lack builder to enable middlewares
-           (lack.builder:builder
-            ;; session lack middleware
-            :session
-            ;; "static" lack middleware
-            (:static :path static-path
-                     :root static-root)
-            *app*)
-           ;; Clackup options
-           :server server
-           :address address
-           :port port
-           :debug debug
-           :silent silent
-           :use-thread use-thread
-           ))))
+	  (start-app *app*
+		     :server server
+		     :port port
+		     :address address
+		     :debug debug
+		     :silent silent
+		     :use-thread use-thread
+		     :static-path static-path
+		     :static-root static-root))))
 
 ;; Stop server
 (defun stop ()
   "Stop the server"
-  (when *handler*
-    (format t "Ninglex: Stopping server... ~%")
-    (clack:stop *handler*)
-    (setf *handler* nil) ;Clear the handler (TODO: is this ok? )
-    ))
-
+  (stop-handler *handler*))
