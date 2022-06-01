@@ -35,11 +35,7 @@
   (declare (type (or symbol string) name)
            (type list param-list))
   "Obtain the value of a request parameter called 'name' (string)"
-  (let ((cons-cell (assoc name param-list :test 'equal)))
-     (if cons-cell
-         (cdr cons-cell)
-         ;; else
-         (error (format nil "Request parameter not found: ~a" name)))))
+  (cdr (assoc name param-list :test 'equal)))
 
 (defmacro with-request-params (params-variable param-list &body body)
   (declare (type list param-list) (type symbol params-variable))
