@@ -5,6 +5,8 @@
                 :builder)
   (:export
    :*app*
+   :*catch-errors*
+   :*show-errors*
    :*http-status-codes*
    :*handler*
    :with-request-params
@@ -88,12 +90,28 @@ Param-list should be list of (symbol param-name-as-string).
   (setf (ningle:route *app* route :method method)
         function))
 
+(defparameter *catch-errors* t)
+(defparameter *show-errors* nil)
+
 (defmacro with-route ((route-string params-var &key (method :GET)) &body body)
   "When calling the route, execute the body, binding the params to params-var"
-  `(set-route ,route-string
-               (lambda (,params-var)
-                 ,@body)
-               :method ,method))
+  `(set-route
+    ,route-string
+    (lambda (,params-var)
+      (declare (ignorable ,params-var))
+      (block top-level-handler
+          (handler-bind
+              ((serious-condition
+                 (lambda (condition)
+                   (when *catch-errors*
+                     (format *error-output* "~A~%" condition)
+                     (return-from top-level-handler
+                       (string-response
+                        (when *show-errors*
+                          (format nil "~A" condition))
+                        :status-code 500))))))
+            ,@body)))
+    :method ,method))
   
 
 ;; Handler for start/stop.
