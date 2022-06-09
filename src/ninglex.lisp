@@ -90,8 +90,11 @@ Param-list should be list of (symbol param-name-as-string).
   (setf (ningle:route *app* route :method method)
         function))
 
-(defparameter *catch-errors* t)
-(defparameter *show-errors* nil)
+(defparameter *catch-errors* t
+  "When t, handle top level errors inside `with-route', but responding with a 500 error.")
+  
+(defparameter *show-errors* nil
+  "When t and `*catch-errors*' is t, send the condition in the response body.")
 
 (defmacro with-route ((route-string params-var &key (method :GET)) &body body)
   "When calling the route, execute the body, binding the params to params-var"
