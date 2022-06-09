@@ -5,6 +5,8 @@
                 :builder)
   (:export
    :*app*
+   :*catch-errors*
+   :*show-errors*
    :*http-status-codes*
    :*handler*
    :with-request-params
@@ -35,11 +37,7 @@
   (declare (type (or symbol string) name)
            (type list param-list))
   "Obtain the value of a request parameter called 'name' (string)"
-  (let ((cons-cell (assoc name param-list :test 'equal)))
-     (if cons-cell
-         (cdr cons-cell)
-         ;; else
-         (error (format nil "Request parameter not found: ~a" name)))))
+  (cdr (assoc name param-list :test 'equal)))
 
 (defmacro with-request-params (params-variable param-list &body body)
   (declare (type list param-list) (type symbol params-variable))
@@ -92,12 +90,31 @@ Param-list should be list of (symbol param-name-as-string).
   (setf (ningle:route *app* route :method method)
         function))
 
+(defparameter *catch-errors* t
+  "When t, handle top level errors inside `with-route', but responding with a 500 error.")
+  
+(defparameter *show-errors* nil
+  "When t and `*catch-errors*' is t, send the condition in the response body.")
+
 (defmacro with-route ((route-string params-var &key (method :GET)) &body body)
   "When calling the route, execute the body, binding the params to params-var"
-  `(set-route ,route-string
-               (lambda (,params-var)
-                 ,@body)
-               :method ,method))
+  `(set-route
+    ,route-string
+    (lambda (,params-var)
+      (declare (ignorable ,params-var))
+      (block top-level-handler
+          (handler-bind
+              ((serious-condition
+                 (lambda (condition)
+                   (when *catch-errors*
+                     (format *error-output* "~A~%" condition)
+                     (return-from top-level-handler
+                       (string-response
+                        (when *show-errors*
+                          (format nil "~A" condition))
+                        :status-code 500))))))
+            ,@body)))
+    :method ,method))
   
 
 ;; Handler for start/stop.
